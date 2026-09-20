@@ -1,0 +1,7 @@
+{
+  "model": "kilo/kilo-auto/efficient",
+  "variant": null,
+  "tested_kilo_version": "7.7.5",
+  "steps": 30,
+  "timeout_seconds": 3600
+}

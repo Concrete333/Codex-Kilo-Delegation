@@ -1,0 +1,10 @@
+{
+  "mode": "explore",
+  "objective": "Offline profile validation only; do not launch inference",
+  "context": "This contract exists to check resolved CLI configuration without model usage.",
+  "read_paths": ["SKILL.md"],
+  "write_paths": [],
+  "acceptance": ["Resolved permissions match the requested isolated profile"],
+  "constraints": ["No model inference during dry-run"],
+  "judgment_calls": []
+}
