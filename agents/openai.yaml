@@ -1,6 +1,6 @@
 interface:
   display_name: "Kilo Delegator"
-  short_description: "Save Codex usage with worker-owned implementation"
-  default_prompt: "Use $kilo-delegator to outsource suitable implementation, tests and corrections, then verify the result before integration."
+  short_description: "Delegate mechanical and pattern-following work"
+  default_prompt: "Use $kilo-delegator for a bounded mechanical or pattern-following assignment with explicit checks; keep investigation and acceptance in Codex."
 policy:
   allow_implicit_invocation: true

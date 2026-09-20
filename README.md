@@ -1,6 +1,6 @@
 # Codex Kilo Delegation
 
-Let Codex make the decisions and verify the result while Kilo handles substantial implementation, tests and corrections.
+Let Kilo handle mechanical edit batches and small, pattern-following implementations while Codex owns decisions and verification.
 
 This Codex skill uses **Kilo Auto Efficient**, which chooses underlying models automatically. It aims to save Codex usage by handing off work Codex can check more cheaply than it can perform. Kilo usage is billed separately; lower total cost is not guaranteed.
 
@@ -11,7 +11,7 @@ This Codex skill uses **Kilo Auto Efficient**, which chooses underlying models a
 - Saves the result and queues one completion message to Codex. No model-driven polling loop.
 - Keeps acceptance and integration with Codex. Nothing is automatically merged or pushed.
 
-Good assignments include settled features, reproducible repairs, refactors and substantial test batches. Keep tiny edits, deterministic scripts and unresolved requirements local. Read-only exploration and review use a restricted tool profile.
+Candidate assignments include repeated edits, a small self-contained utility, or tests for specified cases following an existing example. Supply target files and executable checks. Keep debugging, historical investigation, cross-component changes and stateful safety repairs in Codex. Tiny edits and deterministic scripts usually do not justify delegation. Read-only extraction and checklist review use a restricted tool profile.
 
 ## Install
 
@@ -30,7 +30,7 @@ If that directory already exists, update or reconcile it instead of overwriting 
 
 Ask Codex:
 
-> Use $kilo-delegator for suitable implementation work. Let Kilo implement, test and correct it; verify the result before integration.
+> Use $kilo-delegator if this task has a mechanical or pattern-following batch worth delegating. Supply explicit checks and verify the result before integration.
 
 Automatic discovery is enabled. Explicit invocation is useful when starting out; the skill does not grant permission to transmit code or spend money by itself.
 

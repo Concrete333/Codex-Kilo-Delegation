@@ -7,7 +7,7 @@ task-specific temporary directory. Do not include credentials. Schema:
 {
   "mode": "implement",
   "objective": "One bounded outcome",
-  "context": "Relevant project instructions, entry points and settled decisions",
+  "context": "Key entry points, settled decisions, actual shell and test command",
   "read_paths": ["src", "tests", "AGENTS.md"],
   "write_paths": ["src/component.py", "tests/test_component.py"],
   "acceptance": ["Concrete behavior and failure cases; checks the worker must run"],
@@ -27,5 +27,5 @@ contract. Checks must target correctness, not merely formatting or worker claims
 The wrapper asks for a JSON handoff with `status` (`complete`, `partial`,
 `blocked`), `summary`, `files_changed`, `checks`, `judgment_calls`, and `blockers`.
 Every list contains strings. Checks are worker-reported, not independently
-verified. No handoff, malformed JSON, errors, scope drift, configuration mismatch
-or a step/time limit prevents an acceptance-ready receipt. Codex still owns acceptance.
+verified. Missing or malformed handoffs, errors, scope drift, configuration mismatch
+or exhausted step/time limits prevent acceptance-ready status. Codex owns acceptance.
