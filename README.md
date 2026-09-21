@@ -2,7 +2,7 @@
 
 Let Kilo handle mechanical edit batches and small, pattern-following implementations while Codex owns decisions and verification.
 
-This Codex skill uses **Kilo Auto Efficient**, which chooses underlying models automatically. It aims to save Codex usage by handing off work Codex can check more cheaply than it can perform. Kilo usage is billed separately; lower total cost is not guaranteed.
+This Codex skill uses **MiMo-V2.6-Pro through Kilo**, with reasoning enabled. It aims to save Codex usage by handing off work Codex can check more cheaply than it can perform. Kilo usage is billed separately; lower total cost is not guaranteed.
 
 ## What it does
 
@@ -15,7 +15,7 @@ Candidate assignments include repeated edits, a small self-contained utility, or
 
 ## Install
 
-Requires Codex, Python 3.10+, Git and an authenticated Kilo CLI account with authorized billing. The tested Kilo version is **7.7.5**; the wrapper checks the version and stops on a mismatch. Windows is the live-tested platform. Other platforms are not qualified.
+Requires Codex, Python 3.10+, Git and an authenticated Kilo CLI account with authorized billing. The configuration-checked Kilo version is **7.7.6**; the wrapper checks the version and stops on a mismatch. All three worker profiles were checked without inference. Windows is the live-tested platform for the earlier workflow; MiMo implementation is not yet live-tested. Other platforms are not qualified.
 
 Clone into your Codex skills directory (normally `~/.codex/skills`):
 
@@ -34,7 +34,7 @@ Ask Codex:
 
 Automatic discovery is enabled. Explicit invocation is useful when starting out; the skill does not grant permission to transmit code or spend money by itself.
 
-The default in `settings.json` is `kilo/kilo-auto/efficient`, with no fixed reasoning variant. Codex retains decisions about requirements, consequential domain behavior and acceptance. Workers receive the assignment and relevant evidence, not the whole conversation.
+The default in `settings.json` is `kilo/xiaomi/mimo-v2.6-pro`, with variant `thinking`. Codex retains decisions about requirements, consequential domain behavior and acceptance. Workers receive the assignment and relevant evidence, not the whole conversation.
 
 Completion wake-up requires a native Codex executable supporting `queue --thread --message`. Delivery is armed, not guaranteed. If unavailable, Codex tells you to check back instead of repeatedly polling. Safe reruns after verified mechanical fixes are allowed within existing authorization; uncertain delivery is not automatically retried.
 
@@ -44,7 +44,7 @@ Implementation starts from a clean committed revision; uncommitted changes are n
 
 The default limits are 30 steps and one hour, not a dollar cap. A timeout or incomplete handoff is not accepted as success. Logs may contain source code; keep them private.
 
-The Auto Efficient smoke test completed a small Python implementation, ran and corrected its tests, and passed independent checks: 15 unit tests plus 3,375 interval combinations. Worker-reported cost was $0.0157, excluding Codex preparation and review. One small run confirms operation, not general savings.
+A historical Auto Efficient smoke test completed a small Python implementation, ran and corrected its tests, and passed independent checks: 15 unit tests plus 3,375 interval combinations. Worker-reported cost was $0.0157, excluding Codex preparation and review. That run does not validate the current MiMo default or establish general savings. MiMo's catalog availability and configuration have been checked; a paid implementation test remains outstanding.
 
 Run offline tests:
 
@@ -54,4 +54,4 @@ python -B -m unittest discover -s tests -q
 
 Operational details: [task contract](references/task-contract.md), [runtime](references/runtime.md).
 Related project: [Codex Agent Deployment](https://github.com/Concrete333/Codex-Agent-Deployment).
-Routing documentation: [Kilo Auto Model](https://kilo.ai/docs/code-with-ai/agents/auto-model).
+Model benchmarks: [Artificial Analysis: MiMo-V2.6-Pro](https://artificialanalysis.ai/models/mimo-v2-6-pro).

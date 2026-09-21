@@ -12,9 +12,9 @@ python <skill-dir>/scripts/kilo_delegate.py status --run-dir C:/path/returned-ru
 without inference. It retains the worktree and logs. A real start is a separate
 explicit command. Optional flags: `--model provider/model`, `--variant NAME`,
 `--base-ref REF`, `--steps N`, `--timeout-seconds N`. A variant is provider-specific;
-do not invent one. Default to `kilo/kilo-auto/efficient` with no variant; use a
-model override only for an explicit user choice. The tier routes underlying models
-automatically. Record their identity when exposed; do not infer it from the tier name.
+do not invent one. Default to `kilo/xiaomi/mimo-v2.6-pro` with variant `thinking`;
+use another configuration only for an explicit user choice. Record the effective
+model and variant when exposed; do not substitute another model if unavailable.
 
 For a bounded correction, use `start --candidate <previous-run-dir>` with the
 same repo and a new task file. Only a finished implementation candidate may be

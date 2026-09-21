@@ -27,6 +27,18 @@ def handoff(**extra):
 
 
 class UnitTests(unittest.TestCase):
+    def test_configured_default_reaches_worker_profile(self):
+        settings = kd.read_json(kd.SKILL / "settings.json")
+        self.assertEqual(settings["model"], "kilo/xiaomi/mimo-v2.6-pro")
+        self.assertEqual(settings["variant"], "thinking")
+        for mode in ("implement", "explore", "review"):
+            with self.subTest(mode=mode):
+                config = kd.make_config(contract(mode), settings["model"],
+                                        settings["variant"], settings["steps"])
+                worker = config["agent"]["codex-worker"]
+                self.assertEqual(worker["model"], settings["model"])
+                self.assertEqual(worker["variant"], settings["variant"])
+
     def test_contract(self):
         self.assertEqual(kd.validate_contract(contract())["mode"], "implement")
 
@@ -162,7 +174,7 @@ class GitTests(unittest.TestCase):
         with patch.object(kd, "RUNS", Path(self.tmp.name) / "runs"), patch.object(kd, "kilo_executable", return_value=sys.executable), patch.object(kd, "resolved_profile"):
             real_command = kd.command
             def mock_command(argv, **kw):
-                return "7.7.5\n" if argv[1:] == ["--version"] else real_command(argv, **kw)
+                return "7.7.6\n" if argv[1:] == ["--version"] else real_command(argv, **kw)
             with patch.object(kd, "command", side_effect=mock_command):
                 result = kd.start(args)
         self.assertEqual(result["status"], "prepared")
@@ -176,7 +188,7 @@ class GitTests(unittest.TestCase):
         args = argparse.Namespace(repo=str(self.root), task_file=str(task), model=None, variant=None,
                                   steps=None, timeout_seconds=None, candidate=None, base_ref=None, dry_run=True)
         real_command = kd.command
-        with patch.object(kd, "kilo_executable", return_value=sys.executable), patch.object(kd, "command", side_effect=lambda argv, **kw: "7.7.5\n" if argv[1:] == ["--version"] else real_command(argv, **kw)):
+        with patch.object(kd, "kilo_executable", return_value=sys.executable), patch.object(kd, "command", side_effect=lambda argv, **kw: "7.7.6\n" if argv[1:] == ["--version"] else real_command(argv, **kw)):
             with self.assertRaisesRegex(ValueError, "clean"):
                 kd.start(args)
 
