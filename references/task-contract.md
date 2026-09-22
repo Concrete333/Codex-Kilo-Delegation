@@ -21,6 +21,7 @@ only necessary read paths. Write scope must be inside read scope. Use empty
 `write_paths` for `explore` and `review`. Read-only review needs relevant source
 and any prepared diff artifact in read scope; shell access is unavailable.
 Supply known exceptions as input → expected behavior, reusing existing tests.
+For implementation, ask for small tested increments with useful edits saved along the way.
 Include shared-state ownership and whether a new requirement changes an earlier
 contract. Checks must target correctness, not merely formatting or worker claims.
 

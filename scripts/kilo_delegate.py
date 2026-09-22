@@ -157,15 +157,18 @@ def path_rules(scopes, action="allow"):
 def make_config(contract, model, variant, steps):
     if contract["mode"] == "implement":
         profile = {"mode": "primary", "description": "Codex-owned implementation worker",
-                   "model": model, "steps": steps,
+                   "model": model,
                    "prompt": "Implement the supplied contract, run relevant tests and correct failures. "
                    "Use available tools and skills as needed within the authorized task. "
+                   "Implement and test in small increments; save useful edits before expanding the solution. "
                    "Keep edits within write_paths; report missing scope or permissions as blockers. "
                    "Do not commit, push, merge, change billing or perform unrelated external actions. "
                    "Delegate only when the assignment authorizes it. "
                    "Return one final JSON object with status complete|partial|blocked, summary (string), "
                    "files_changed, checks, judgment_calls and blockers (arrays of strings). "
                    "Report actual checks and remaining failures; exhausted limits mean partial."}
+        if steps is not None:
+            profile["steps"] = steps
         if variant:
             profile["variant"] = variant
         return {"$schema": "https://app.kilo.ai/config.json", "share": "disabled",
@@ -177,7 +180,7 @@ def make_config(contract, model, variant, steps):
                   "external_directory": "deny", "webfetch": "deny", "websearch": "deny",
                   "agent_manager": "deny", "lsp": "deny", "question": "deny"}
     profile = {"mode": "primary", "description": "Bounded Codex-owned worker",
-               "model": model, "steps": steps, "permission": permission,
+               "model": model, "permission": permission,
                "prompt": "You are a delegated worker, not an orchestrator. Follow the supplied contract. "
                "Never delegate, run commands, invoke skills, change Git metadata or widen scope. "
                "Use read on the supplied paths, including scoped directories for discovery; search tools are disabled. "
@@ -186,6 +189,8 @@ def make_config(contract, model, variant, steps):
                "Return only one JSON object with status complete|partial|blocked, summary (string), "
                "files_changed, checks, judgment_calls and blockers (arrays of strings). "
                "If a step limit stops unfinished work, return partial, not complete."}
+    if steps is not None:
+        profile["steps"] = steps
     if variant:
         profile["variant"] = variant
     return {"$schema": "https://app.kilo.ai/config.json", "share": "disabled",
@@ -225,7 +230,7 @@ def resolved_profile(binary, root, env, run, config):
         provider, model_id = expected["model"].split("/", 1)
         if obj.get("model") not in (expected["model"], {"providerID": provider, "modelID": model_id}):
             raise ValueError("Resolved model differs from requested model")
-        if obj.get("steps") != expected["steps"]:
+        if obj.get("steps") != expected.get("steps"):
             raise ValueError("Resolved step limit differs from requested limit")
         if expected.get("variant") and obj.get("variant", obj.get("options", {}).get("variant")) != expected["variant"]:
             raise ValueError("Resolved variant differs from requested variant")
@@ -264,7 +269,7 @@ def resolved_profile(binary, root, env, run, config):
     provider, model_id = expected["model"].split("/", 1)
     if parsed_model not in (expected["model"], {"providerID": provider, "modelID": model_id}):
         raise ValueError("Resolved model differs from requested model")
-    if obj.get("steps") != expected["steps"]:
+    if obj.get("steps") != expected.get("steps"):
         raise ValueError("Resolved step limit differs from requested limit")
     if expected.get("variant") and obj.get("variant", obj.get("options", {}).get("variant")) != expected["variant"]:
         raise ValueError("Requested variant is not exposed in resolved profile; revalidate before use")
@@ -337,6 +342,7 @@ def parse_events(path):
     cost = sum(costs) if costs and all(isinstance(c, (int, float)) for c in costs) else None
     return {"final_text": texts[-1] if texts else "", "sessions": sorted(sessions),
             "errors": errors, "steps": len(finishes), "reported_cost": cost,
+            "finish_reason": next(reversed(finishes.values())).get("reason") if finishes else None,
             "usage_steps": list(finishes.values())}
 
 
@@ -406,7 +412,9 @@ def execute(run):
             issues.append("Missing or invalid JSON handoff; inspect events.jsonl")
         if timed_out:
             issues.append("Process timeout; work may be partial")
-        if events["steps"] >= manifest["steps"]:
+        if events["finish_reason"] == "length":
+            issues.append("Final response reached its generation length limit; work may be partial")
+        if manifest.get("steps") is not None and events["steps"] >= manifest["steps"]:
             issues.append("Step cap reached; do not accept as complete")
         if exit_code != 0 or events["errors"]:
             issues.append("Kilo exit or event error; inspect retained logs")
@@ -416,6 +424,7 @@ def execute(run):
                 exit_code=exit_code, duration_seconds=round(time.monotonic() - started, 2),
                 issues=issues, files_changed=changed if manifest["mode"] == "implement" else [], sessions=events["sessions"],
                 reported_cost=events["reported_cost"], steps=events["steps"],
+                finish_reason=events["finish_reason"],
                 handoff=str(run / "handoff.json") if handoff else None)
     except Exception as exc:
         receipt(run, status="failed", worktree=str(root), error=str(exc),
@@ -469,8 +478,11 @@ def start(args):
         raise ValueError("Model must be explicit provider/model")
     steps = args.steps if args.steps is not None else settings["steps"]
     timeout = args.timeout_seconds if args.timeout_seconds is not None else settings["timeout_seconds"]
-    if not 1 <= steps <= 100 or not 1 <= timeout <= 14400:
-        raise ValueError("Steps must be 1..100 and timeout 1..14400 seconds")
+    if steps is not None and (type(steps) is not int or steps < 0):
+        raise ValueError("Steps must be a positive integer, or 0/null for no cap")
+    steps = steps or None
+    if type(timeout) is not int or not 1 <= timeout <= 14400:
+        raise ValueError("Timeout must be 1..14400 seconds")
     mode = contract["mode"]
     parent_status = git(root, "status", "--porcelain=v1", "--untracked-files=all")
     base = git(root, "rev-parse", "--verify", (args.base_ref or "HEAD") + "^{commit}").strip()
@@ -556,7 +568,7 @@ def main():
     item.add_argument("--task-file", required=True)
     for flag in ("model", "variant", "base-ref", "candidate"):
         item.add_argument("--" + flag)
-    item.add_argument("--steps", type=int)
+    item.add_argument("--steps", type=int, help="Optional iteration cap; 0 means uncapped")
     item.add_argument("--timeout-seconds", type=int)
     item.add_argument("--dry-run", action="store_true")
     item.add_argument("--notify-thread")

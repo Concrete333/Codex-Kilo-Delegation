@@ -2,7 +2,7 @@
 
 Let Kilo handle mechanical edit batches and small, pattern-following implementations while Codex owns decisions and verification.
 
-This Codex skill uses **MiMo-V2.6-Pro through Kilo**, with reasoning enabled. It aims to save Codex usage by handing off work Codex can check more cheaply than it can perform. Kilo usage is billed separately; lower total cost is not guaranteed.
+This Codex skill uses **DeepSeek V4.1 Flash Max through Kilo**. It aims to save Codex usage by handing off work Codex can check more cheaply than it can perform. Kilo usage is billed separately; lower total cost is not guaranteed.
 
 ## What it does
 
@@ -15,7 +15,7 @@ Candidate assignments include repeated edits, a small self-contained utility, or
 
 ## Install
 
-Requires Codex, Python 3.10+, Git and an authenticated Kilo CLI account with authorized billing. The configuration-checked Kilo version is **7.7.6**; the wrapper checks the version and stops on a mismatch. All three worker profiles were checked without inference. Windows is the live-tested platform for the earlier workflow; MiMo implementation is not yet live-tested. Other platforms are not qualified.
+Requires Codex, Python 3.10+, Git and an authenticated Kilo CLI account with authorized billing. The configuration-checked Kilo version is **7.7.7**; the wrapper checks the version and stops on a mismatch. All three worker profiles passed no-inference configuration checks, and 53 offline tests passed. Windows is the live-tested platform. Other platforms are not qualified.
 
 Clone into your Codex skills directory (normally `~/.codex/skills`):
 
@@ -34,7 +34,7 @@ Ask Codex:
 
 Automatic discovery is enabled. Explicit invocation is useful when starting out; the skill does not grant permission to transmit code or spend money by itself.
 
-The default in `settings.json` is `kilo/xiaomi/mimo-v2.6-pro`, with variant `thinking`. Codex retains decisions about requirements, consequential domain behavior and acceptance. Workers receive the assignment and relevant evidence, not the whole conversation.
+The default in `settings.json` is `kilo/deepseek/deepseek-v4.1-flash`, with variant `max`. You can explicitly choose another supported model and its variant. Codex retains decisions about requirements, consequential domain behavior and acceptance. Workers receive the assignment and relevant evidence, not the whole conversation.
 
 Completion wake-up requires a native Codex executable supporting `queue --thread --message`. Delivery is armed, not guaranteed. If unavailable, Codex tells you to check back instead of repeatedly polling. Safe reruns after verified mechanical fixes are allowed within existing authorization; uncertain delivery is not automatically retried.
 
@@ -42,9 +42,22 @@ Completion wake-up requires a native Codex executable supporting `queue --thread
 
 Implementation starts from a clean committed revision; uncommitted changes are not copied. Worktrees prevent ordinary edit collisions, **not malicious access**. Use trusted repositories and inspect inherited Kilo configuration. Existing permissions apply, and interactive approval can block a detached run.
 
-The default limits are 30 steps and one hour, not a dollar cap. A timeout or incomplete handoff is not accepted as success. Logs may contain source code; keep them private.
+There is no step cap by default; the one-hour timeout remains. Neither is a dollar budget. Set an optional iteration limit with `--steps N`, or use `--steps 0` for no cap. A timeout or incomplete handoff is not accepted as success. Logs may contain source code; keep them private.
 
-A historical Auto Efficient smoke test completed a small Python implementation, ran and corrected its tests, and passed independent checks: 15 unit tests plus 3,375 interval combinations. Worker-reported cost was $0.0157, excluding Codex preparation and review. That run does not validate the current MiMo default or establish general savings. MiMo's catalog availability and configuration have been checked; a paid implementation test remains outstanding.
+## Measured results
+
+In a 22 September 2026 inventory-component test, both DeepSeek V4.1 Flash Max and GLM 5.3 Flash Max passed all 27 independent test methods before review. Astra High added acceptance tests without changing either implementation.
+
+| Worker | Worker cost | Including Astra High acceptance |
+| --- | ---: | ---: |
+| DeepSeek V4.1 Flash Max | $0.046 | **$0.584** |
+| GLM 5.3 Flash Max | $0.072 | **$0.728** |
+
+DeepSeek's pipeline cost 22.7% less than the earlier same-task Astra solo run ($0.756), and 14.4% less than Luna + Astra ($0.683). These are one run per route, with historical—not simultaneous—solo/Luna controls. Acceptance was 92% of DeepSeek's total. Costs combine Kilo-reported spending and API-equivalent Codex estimates, exclude shared setup and analysis, and do not measure subscription quota savings.
+
+DeepSeek is the default starting candidate, not a proven winner for every task. MiMo's attempt returned an upstream timeout before producing an implementation; that does not establish a coding-capability failure. [Full protocol, results and accounting](https://github.com/Concrete333/Codex-Delegation-Deployment/blob/main/docs/benchmarks/inventory-events/external-workers-results-2026-09-22.md).
+
+The comparison used a per-run 65,536-token output ceiling and 30-minute timeout. Normal skill use leaves Kilo's output ceiling unchanged and retains the one-hour timeout.
 
 Run offline tests:
 
@@ -53,5 +66,4 @@ python -B -m unittest discover -s tests -q
 ```
 
 Operational details: [task contract](references/task-contract.md), [runtime](references/runtime.md).
-Related project: [Codex Agent Deployment](https://github.com/Concrete333/Codex-Agent-Deployment).
-Model benchmarks: [Artificial Analysis: MiMo-V2.6-Pro](https://artificialanalysis.ai/models/mimo-v2-6-pro).
+Related project: [Codex Agent Deployment](https://github.com/Concrete333/Codex-Delegation-Deployment).

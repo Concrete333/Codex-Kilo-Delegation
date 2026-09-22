@@ -1,6 +1,6 @@
 ---
 name: kilo-delegator
-description: Delegate mechanical edit batches, small pattern-following implementations and known-file extraction to Kilo with MiMo-V2.6-Pro when authorized and cheaply verifiable. Not for open-ended debugging, domain decisions or broad implementation.
+description: Delegate mechanical edit batches, small pattern-following implementations and known-file extraction through Kilo when authorized and cheaply verifiable. Not for open-ended debugging, domain decisions or broad implementation.
 ---
 
 # Kilo Delegator
@@ -43,11 +43,12 @@ If the worker needs missing evidence or a new domain decision, require it to
 return the blocker and partial artifacts. Resolve that work in Codex; do not
 turn the assignment into an investigation.
 
-Use MiMo-V2.6-Pro (`kilo/xiaomi/mimo-v2.6-pro`) with variant `thinking` from
+Use DeepSeek V4.1 Flash (`kilo/deepseek/deepseek-v4.1-flash`) with variant `max` from
 `settings.json` unless the user explicitly selects another configuration.
 Do not silently substitute another model if unavailable. Retain result verification.
 External code transmission and the configured provider's billing must be
-authorized. CLI steps and wall time are limits, not a guaranteed dollar cap.
+authorized. Runs have no step cap by default; the timeout remains enforced.
+Neither a timeout nor an optional step cap guarantees a dollar limit.
 
 ## Run
 

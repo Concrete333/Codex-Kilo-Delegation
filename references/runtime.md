@@ -12,9 +12,15 @@ python <skill-dir>/scripts/kilo_delegate.py status --run-dir C:/path/returned-ru
 without inference. It retains the worktree and logs. A real start is a separate
 explicit command. Optional flags: `--model provider/model`, `--variant NAME`,
 `--base-ref REF`, `--steps N`, `--timeout-seconds N`. A variant is provider-specific;
-do not invent one. Default to `kilo/xiaomi/mimo-v2.6-pro` with variant `thinking`;
+do not invent one. Default to `kilo/deepseek/deepseek-v4.1-flash` with variant `max`;
 use another configuration only for an explicit user choice. Record the effective
 model and variant when exposed; do not substitute another model if unavailable.
+
+Default `steps: null` omits the iteration cap; `--steps 0` also requests no cap.
+Use `--steps N` only when a positive iteration limit is wanted. The default
+one-hour timeout remains enforced. Preflight rejects an inherited step limit
+that differs from the request; inspect that configuration rather than silently
+running with a different limit.
 
 For a bounded correction, use `start --candidate <previous-run-dir>` with the
 same repo and a new task file. Only a finished implementation candidate may be
@@ -74,9 +80,14 @@ edit collisions, not malicious access. Project AGENTS instructions may still be
 loaded by Kilo. Only use trusted repositories and review their instructions first.
 Sensitive/configuration paths and symlinks are rejected conservatively.
 
-Kilo `steps` requests a final text-only response; the wrapper also rejects runs
-that reach the cap. Timeout and malformed output preserve artifacts, not success.
+When set, Kilo `steps` requests a final text-only response; the wrapper rejects
+runs that reach that cap. Timeout and malformed output preserve artifacts, not success.
 Usage is recorded from observed step events; missing cost/usage stays unknown.
+Inspect `finish_reason` when a run stops without a usable handoff. `length` is a
+response-generation limit, not the iteration cap; increasing `steps` does not fix it.
+For a confirmed length stop, check the model's output allowance before testing
+a per-run `KILO_EXPERIMENTAL_OUTPUT_TOKEN_MAX` override. Record it and include
+the extra usage; do not raise it globally or disable compaction as a substitute.
 It excludes Codex preparation/review and is not an accepted-result savings claim.
 
 To inspect a candidate: `git -C <worktree> status --short` and

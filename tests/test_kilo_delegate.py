@@ -29,8 +29,9 @@ def handoff(**extra):
 class UnitTests(unittest.TestCase):
     def test_configured_default_reaches_worker_profile(self):
         settings = kd.read_json(kd.SKILL / "settings.json")
-        self.assertEqual(settings["model"], "kilo/xiaomi/mimo-v2.6-pro")
-        self.assertEqual(settings["variant"], "thinking")
+        self.assertEqual(settings["model"], "kilo/deepseek/deepseek-v4.1-flash")
+        self.assertEqual(settings["variant"], "max")
+        self.assertIsNone(settings["steps"])
         for mode in ("implement", "explore", "review"):
             with self.subTest(mode=mode):
                 config = kd.make_config(contract(mode), settings["model"],
@@ -38,6 +39,22 @@ class UnitTests(unittest.TestCase):
                 worker = config["agent"]["codex-worker"]
                 self.assertEqual(worker["model"], settings["model"])
                 self.assertEqual(worker["variant"], settings["variant"])
+                self.assertNotIn("steps", worker)
+
+    def test_optional_step_cap(self):
+        for mode in ("implement", "explore", "review"):
+            self.assertEqual(kd.make_config(contract(mode), "kilo/test", None, 150)
+                             ["agent"]["codex-worker"]["steps"], 150)
+
+    def test_uncapped_profile_rejects_inherited_limit(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run = Path(tmp)
+            config = kd.make_config(contract(), "kilo/test", None, None)
+            with patch.object(kd, "command", return_value=json.dumps({"model": "kilo/test"})):
+                kd.resolved_profile("fake", run, {}, run, config)
+            with patch.object(kd, "command", return_value=json.dumps({"model": "kilo/test", "steps": 30})):
+                with self.assertRaisesRegex(ValueError, "step limit"):
+                    kd.resolved_profile("fake", run, {}, run, config)
 
     def test_contract(self):
         self.assertEqual(kd.validate_contract(contract())["mode"], "implement")
@@ -174,7 +191,7 @@ class GitTests(unittest.TestCase):
         with patch.object(kd, "RUNS", Path(self.tmp.name) / "runs"), patch.object(kd, "kilo_executable", return_value=sys.executable), patch.object(kd, "resolved_profile"):
             real_command = kd.command
             def mock_command(argv, **kw):
-                return "7.7.6\n" if argv[1:] == ["--version"] else real_command(argv, **kw)
+                return kd.read_json(kd.SKILL / "settings.json")["tested_kilo_version"] + "\n" if argv[1:] == ["--version"] else real_command(argv, **kw)
             with patch.object(kd, "command", side_effect=mock_command):
                 result = kd.start(args)
         self.assertEqual(result["status"], "prepared")
@@ -188,20 +205,20 @@ class GitTests(unittest.TestCase):
         args = argparse.Namespace(repo=str(self.root), task_file=str(task), model=None, variant=None,
                                   steps=None, timeout_seconds=None, candidate=None, base_ref=None, dry_run=True)
         real_command = kd.command
-        with patch.object(kd, "kilo_executable", return_value=sys.executable), patch.object(kd, "command", side_effect=lambda argv, **kw: "7.7.6\n" if argv[1:] == ["--version"] else real_command(argv, **kw)):
+        with patch.object(kd, "kilo_executable", return_value=sys.executable), patch.object(kd, "command", side_effect=lambda argv, **kw: kd.read_json(kd.SKILL / "settings.json")["tested_kilo_version"] + "\n" if argv[1:] == ["--version"] else real_command(argv, **kw)):
             with self.assertRaisesRegex(ValueError, "clean"):
                 kd.start(args)
 
-    def run_fixture(self, scenario, mode="implement", notification=False, cleanup_failure=False, delivery_exit=0):
+    def run_fixture(self, scenario, mode="implement", notification=False, cleanup_failure=False, delivery_exit=0, steps=3):
         run = Path(self.tmp.name) / "run"
         run.mkdir()
         lock = run / "worker-owner.lock"
         lock.write_text("owned")
         kd.save(run / "task.json", contract(mode))
-        kd.save(run / "worker-config.json", kd.make_config(contract(mode), "kilo/test", None, 3))
+        kd.save(run / "worker-config.json", kd.make_config(contract(mode), "kilo/test", None, steps))
         kd.save(run / "manifest.json", {"worktree": str(self.root), "binary": sys.executable,
             "model": "kilo/test", "variant": None, "timeout_seconds": 1 if scenario == "timeout" else 10,
-            "base_commit": self.base, "mode": mode, "steps": 3,
+            "base_commit": self.base, "mode": mode, "steps": steps,
             "initial_fingerprint": kd.checkout_fingerprint(self.root),
             "notify_thread": "00000000-0000-4000-8000-000000000001" if notification else None,
             "notify_codex": "fake-codex", "lock": str(lock)})
@@ -288,6 +305,23 @@ class GitTests(unittest.TestCase):
 
     def test_step_cap_never_success(self):
         self.assertEqual(self.run_fixture("steps")["status"], "failed")
+
+    def test_uncapped_worker_can_exceed_old_limit(self):
+        value = self.run_fixture("many_steps", steps=None)
+        self.assertEqual(value["steps"], 40)
+        self.assertEqual(value["status"], "candidate")
+
+    def test_uncapped_timeout_still_fails(self):
+        self.assertEqual(self.run_fixture("timeout", steps=None)["status"], "failed")
+
+    def test_uncapped_missing_handoff_still_fails(self):
+        self.assertEqual(self.run_fixture("missing", steps=None)["status"], "failed")
+
+    def test_length_stop_rejects_even_complete_claim(self):
+        value = self.run_fixture("length", steps=None)
+        self.assertEqual(value["status"], "failed")
+        self.assertEqual(value["finish_reason"], "length")
+        self.assertTrue(any("generation length" in issue for issue in value["issues"]))
 
     def test_provider_error_never_success(self):
         value = self.run_fixture("error")
